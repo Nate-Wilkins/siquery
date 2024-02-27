@@ -1,4 +1,5 @@
 
+result-bin
 /target/
 /powershell/package/
 /siquery_cli/src/*.inv

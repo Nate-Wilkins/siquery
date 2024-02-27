@@ -31,6 +31,7 @@
           pkgsRust                                  = pkgs.rustBuilder.makePackageSet {
             rustVersion                             = "1.75.0";
             packageFun                              = import ./Cargo.nix;
+            workspaceSrc                            = ./.;
           };
           manifest                                  = (pkgs.lib.importTOML ./siquery_cli/Cargo.toml).package;
           environment                               = {

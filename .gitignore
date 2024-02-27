@@ -4,7 +4,6 @@
 /siquery_cli/src/*.inv
 inventory.html
 **/*.rs.bk
-Cargo.lock
 .idea/
 cmake-build-debug/
 siquery_tables/fuzz/sandbox/*

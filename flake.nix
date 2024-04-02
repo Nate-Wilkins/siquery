@@ -2,32 +2,52 @@
   description                                       = "Siquery";
 
   inputs                                            = {
+    systems.url                                     = "path:./flake.systems.nix";
+    systems.flake                                   = false;
+
     nixpkgs.url                                     = "github:NixOS/nixpkgs/23.11";
 
-    nixpkgs-unstable.url                            = "github:NixOS/nixpkgs/nixos-unstable";
-
     flake-utils.url                                 = "github:numtide/flake-utils";
+    flake-utils.inputs.systems.follows              = "systems";
+
+    rust-overlay.url                                = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows             = "nixpkgs";
+    rust-overlay.inputs.flake-utils.follows         = "flake-utils";
+
+    flake-compat.url                                = "github:edolstra/flake-compat";
+    flake-compat.flake                              = false;
 
     cargo2nix.url                                   = "github:cargo2nix/cargo2nix/release-0.11.0";
+    cargo2nix.inputs.nixpkgs.follows                = "nixpkgs";
+    cargo2nix.inputs.rust-overlay.follows           = "rust-overlay";
+    cargo2nix.inputs.flake-utils.follows            = "flake-utils";
+    cargo2nix.inputs.flake-compat.follows           = "flake-compat";
   };
 
   outputs                                           = {
-    self,
     nixpkgs,
-    nixpkgs-unstable,
     flake-utils,
     cargo2nix,
     ...
-  }@inputs:
+  }:
     let
-      systems                                       = [ "x86_64-linux" ];
+      mkPkgs                                        =
+        system:
+          pkgs: (
+            # NixPkgs
+            import pkgs {
+              inherit system;
+              overlays                              = [cargo2nix.overlays.default];
+            }
+            //
+            # Custom Packages.
+            {
+            }
+          );
     in (
-      flake-utils.lib.eachSystem systems (system: (
+      flake-utils.lib.eachDefaultSystem (system: (
         let
-          pkgs                                      = import nixpkgs {
-            inherit system;
-            overlays                                = [cargo2nix.overlays.default];
-          };
+          pkgs                                      = mkPkgs system nixpkgs;
           pkgsRust                                  = pkgs.rustBuilder.makePackageSet {
             rustVersion                             = "1.75.0";
             packageFun                              = import ./Cargo.nix;
@@ -35,7 +55,6 @@
           };
           manifest                                  = (pkgs.lib.importTOML ./siquery_cli/Cargo.toml).package;
           environment                               = {
-            inherit system;
             inherit pkgs;
             inherit pkgsRust;
             inherit manifest;
